@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/cart_provider.dart'; // Ensure this file is created and added to your app
-import '../models/cart_model.dart';
+import '../providers/order_provider.dart';
+import '../models/order_model.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
   final String title;
@@ -19,7 +19,7 @@ class ProductDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cart = context.read<CartProvider>();
+    final orderProvider = context.read<OrderProvider>();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5DC),
@@ -72,18 +72,12 @@ class ProductDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   const Text(
                     "Product Description",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     description,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      height: 1.4,
-                    ),
+                    style: const TextStyle(fontSize: 16, height: 1.4),
                   ),
                   const SizedBox(height: 80), // Extra space for button
                 ],
@@ -96,23 +90,24 @@ class ProductDetailsScreen extends StatelessWidget {
       // Floating Add to Cart Button
       bottomNavigationBar: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Color.fromARGB(217, 214, 191, 175),
+          backgroundColor: const Color.fromARGB(217, 214, 191, 175),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16),
           textStyle: const TextStyle(fontSize: 18),
         ),
         onPressed: () {
-          cart.addItem(
-            CartItem(
+          orderProvider.addItem(
+            OrderItem(
+              productId:
+                  DateTime.now().toString(), // temp ID if not from backend
               name: title,
-              image: image,
               price: double.tryParse(price.replaceAll("\$", "")) ?? 0,
-              description: description,
+              quantity: 1,
             ),
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$title added to cart')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('$title added to cart')));
         },
         icon: const Icon(Icons.add_shopping_cart),
         label: const Text("Add to Cart"),

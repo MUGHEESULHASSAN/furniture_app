@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:provider/provider.dart';
+
 import '../models/credit_card_model.dart';
+import '../models/order_model.dart';
+import '../providers/order_provider.dart';
+import '../providers/auth_provider.dart';
 import 'order_confirmation_screen.dart';
-import 'credit_card_form.dart'; // Import CreditCardFormScreen
+import 'credit_card_form.dart';
 
 class CheckoutScreen extends StatefulWidget {
   @override
@@ -13,18 +18,19 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   List<CreditCardModel> savedCards = [];
   bool _isSameAsShippingAddress = false;
-  String _paymentMethod = 'COD'; // Default payment method is COD
-  String _dropdownValue = 'Existing Card'; // Default dropdown value
-  CreditCardModel? selectedCard; // Variable to store the selected card
+  String _paymentMethod = 'COD';
+  String _dropdownValue = 'Existing Card';
+  CreditCardModel? selectedCard;
 
-  // Create separate controllers for each field
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
-  final TextEditingController shippingAddressController = TextEditingController();
-  final TextEditingController billingAddressController = TextEditingController();
+  final TextEditingController shippingAddressController =
+      TextEditingController();
+  final TextEditingController billingAddressController =
+      TextEditingController();
 
-  final _formKey = GlobalKey<FormState>(); // Add a form key for validation
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
@@ -38,32 +44,64 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (cardsJson != null) {
       final List<dynamic> raw = json.decode(cardsJson);
       setState(() {
-        savedCards = raw
-            .map<CreditCardModel>((e) => CreditCardModel.fromJson(
-          Map<String, dynamic>.from(e as Map),
-        ))
-            .toList();
+        savedCards =
+            raw
+                .map<CreditCardModel>(
+                  (e) => CreditCardModel.fromJson(
+                    Map<String, dynamic>.from(e as Map),
+                  ),
+                )
+                .toList();
       });
     }
   }
 
   Future<void> _saveNewCard(CreditCardModel card) async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Update UI immediately
     setState(() {
       savedCards.add(card);
       selectedCard = card;
-      _dropdownValue = 'Existing Card'; // <-- ensures the list view is visible
+      _dropdownValue = 'Existing Card';
     });
 
-    // Persist as List<Map> (not list of strings)
-    final List<Map<String, dynamic>> toStore = savedCards.map((c) => c.toJson()).toList();
+    final List<Map<String, dynamic>> toStore =
+        savedCards.map((c) => c.toJson()).toList();
     await prefs.setString('cards', json.encode(toStore));
+  }
+
+  Future<void> _placeOrder(BuildContext context) async {
+    final orderProvider = context.read<OrderProvider>();
+    final auth = context.read<AuthProvider>();
+
+    final order = OrderModel(
+      userId: auth.userId ?? "guest",
+      name: fullNameController.text,
+      email: emailController.text,
+      phone: phoneController.text,
+      address: shippingAddressController.text,
+      paymentMethod: _paymentMethod,
+      totalPrice: orderProvider.totalPrice,
+      items: orderProvider.items,
+    );
+
+    final success = await orderProvider.placeOrder(order, auth);
+
+    if (success) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const OrderConfirmationScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(orderProvider.errorMessage ?? "Order failed")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final orderProvider = context.watch<OrderProvider>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Checkout"),
@@ -73,78 +111,62 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
-          key: _formKey, // Attach the form key here
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Personal Information Section
+              // ---------------- Personal Info ----------------
               const Text(
                 "Personal Information",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-              _buildInputField("Full Name", fullNameController, (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your full name.';
-                }
-                if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
-                  return 'Please enter a valid name.';
+              _buildInputField("Full Name", fullNameController, (v) {
+                if (v == null || v.isEmpty) return 'Enter full name';
+                if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(v)) {
+                  return 'Invalid name';
                 }
                 return null;
               }),
-              _buildInputField("Email Address", emailController, (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your email address.';
-                }
-                if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$').hasMatch(value)) {
-                  return 'Please enter a valid email address.';
+              _buildInputField("Email Address", emailController, (v) {
+                if (v == null || v.isEmpty) return 'Enter email';
+                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
+                  return 'Invalid email';
                 }
                 return null;
               }),
-              _buildInputField("Phone Number", phoneController, (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your phone number.';
-                }
-                // Validate UK phone number
-                if (!RegExp(r'^\+44\d{10}$').hasMatch(value) && !RegExp(r'^07\d{9}$').hasMatch(value)) {
-                  return 'Please enter a valid UK phone number (e.g., 07123456789 or +447123456789).';
+              _buildInputField("Phone Number", phoneController, (v) {
+                if (v == null || v.isEmpty) return 'Enter phone number';
+                if (!RegExp(r'^\+44\d{10}$').hasMatch(v) &&
+                    !RegExp(r'^07\d{9}$').hasMatch(v)) {
+                  return 'Enter valid UK number';
                 }
                 return null;
               }),
-
               const SizedBox(height: 25),
 
-              // Shipping Address Section
+              // ---------------- Shipping ----------------
               const Text(
                 "Shipping Address",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
-              _buildInputField("Shipping Address", shippingAddressController, (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your shipping address.';
-                }
-                return null;
-              }),
-
+              _buildInputField(
+                "Shipping Address",
+                shippingAddressController,
+                (v) => v == null || v.isEmpty ? 'Enter shipping address' : null,
+              ),
               const SizedBox(height: 25),
 
-              // Billing Address Section
+              // ---------------- Billing ----------------
               const Text(
                 "Billing Address",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
-              _buildInputField("Billing Address", billingAddressController, (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your billing address.';
-                }
-                return null;
-              }),
-
-              const SizedBox(height: 10),
-
-              // Checkbox for Same as Shipping Address
+              _buildInputField(
+                "Billing Address",
+                billingAddressController,
+                (v) => v == null || v.isEmpty ? 'Enter billing address' : null,
+              ),
               Row(
                 children: [
                   Checkbox(
@@ -153,7 +175,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       setState(() {
                         _isSameAsShippingAddress = value ?? false;
                         if (_isSameAsShippingAddress) {
-                          billingAddressController.text = shippingAddressController.text;
+                          billingAddressController.text =
+                              shippingAddressController.text;
                         } else {
                           billingAddressController.clear();
                         }
@@ -163,187 +186,134 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const Text("Same as Shipping Address"),
                 ],
               ),
-
               const SizedBox(height: 25),
 
-              // Payment Method Section
+              // ---------------- Payment ----------------
               const Text(
                 "Payment Method",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 10),
-
-              // Payment method options
               Row(
                 children: [
                   Radio<String>(
                     value: 'COD',
                     groupValue: _paymentMethod,
-                    onChanged: (value) {
-                      setState(() {
-                        _paymentMethod = value!;
-                      });
-                    },
+                    onChanged: (v) => setState(() => _paymentMethod = v!),
                   ),
                   const Text("Cash on Delivery"),
-                  const SizedBox(width: 20),
                   Radio<String>(
                     value: 'CreditCard',
                     groupValue: _paymentMethod,
-                    onChanged: (value) {
-                      setState(() {
-                        _paymentMethod = value!;
-                      });
-                    },
+                    onChanged: (v) => setState(() => _paymentMethod = v!),
                   ),
                   const Text("Credit Card"),
                 ],
               ),
-              const SizedBox(height: 25),
 
-              // If Credit Card is selected, show card option dropdown
               if (_paymentMethod == 'CreditCard') ...[
+                const SizedBox(height: 15),
                 const Text(
                   "Choose Card Type",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 DropdownButton<String>(
                   value: _dropdownValue,
-                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-                  elevation: 16,
-                  style: const TextStyle(color: Colors.black),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _dropdownValue = newValue!;
-                    });
-                  },
-                  items: <String>['Existing Card', 'New Card']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Container(
-                        color: Colors.white,
-                        padding: const EdgeInsets.all(10),
-                        child: Text(value),
-                      ),
-                    );
-                  }).toList(),
+                  onChanged:
+                      (String? newValue) =>
+                          setState(() => _dropdownValue = newValue!),
+                  items:
+                      ['Existing Card', 'New Card']
+                          .map(
+                            (e) => DropdownMenuItem(value: e, child: Text(e)),
+                          )
+                          .toList(),
                 ),
-                const SizedBox(height: 25),
-
-                // Show existing card list when "Existing Card" is selected
-                if (_dropdownValue == 'Existing Card') ...[
-                  const Text(
-                    "Saved Cards",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                if (_dropdownValue == 'Existing Card')
+                  ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: savedCards.length,
+                    itemBuilder: (context, index) {
+                      final card = savedCards[index];
+                      return ListTile(
+                        title: Text(
+                          "**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}",
+                        ),
+                        subtitle: Text(
+                          "${card.cardHolderName} • Exp: ${card.validTill}",
+                        ),
+                        onTap: () => setState(() => selectedCard = card),
+                      );
+                    },
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0), // Add padding below the list
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: savedCards.length,
-                      itemBuilder: (context, index) {
-                        final card = savedCards[index];
-                        return ListTile(
-                          title: Text(
-                            "**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}",
-                            style: const TextStyle(color: Colors.black),
-                          ),
-                          subtitle: Text(
-                            "${card.cardHolderName} • Exp: ${card.validTill}",
-                            style: const TextStyle(color: Colors.black),
-                          ),
-                          onTap: () {
-                            setState(() {
-                              selectedCard = card;
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-
-                // Show new card form when "New Card" is selected
-                if (_dropdownValue == 'New Card') ...[
+                if (_dropdownValue == 'New Card')
                   IconButton(
-                    icon: const Icon(Icons.add, color: Colors.black),
+                    icon: const Icon(Icons.add),
                     onPressed: () async {
                       final CreditCardModel? newCard = await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              CreditCardForm(
+                          builder:
+                              (_) => CreditCardForm(
                                 onSave: (newCard) {
-                                  _saveNewCard(newCard);           // updates UI + storage
+                                  _saveNewCard(newCard);
                                   Navigator.pop(context, newCard);
                                 },
                               ),
                         ),
                       );
-                      // Ensure the UI updates after adding a new card
                       if (newCard != null) {
                         setState(() {
-                          savedCards.add(newCard); // Add the new card to the list
-                          _dropdownValue = 'Existing Card'; // Switch to "Existing Card" to show the list
+                          savedCards.add(newCard);
+                          _dropdownValue = 'Existing Card';
                         });
                       }
                     },
                   ),
-                ],
               ],
 
-              // Checkout button
+              // ---------------- Confirm Button ----------------
               Center(
                 child: SizedBox(
                   width: 200,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color.fromARGB(217, 214, 191, 175),
-                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () {
-                      if (_formKey.currentState?.validate() ?? false) {
-                        if (_paymentMethod == 'CreditCard' && selectedCard != null) {
-                          // Show a confirmation message using ScaffoldMessenger
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("Amount deducted from card: ${selectedCard!.cardHolderName} - ${selectedCard!.cardNumber}"),
-                              duration: const Duration(seconds: 3),
+                    onPressed:
+                        orderProvider.isLoading
+                            ? null
+                            : () {
+                              if (_formKey.currentState?.validate() ?? false) {
+                                if (_paymentMethod == 'CreditCard' &&
+                                    selectedCard == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Please select a credit card",
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                _placeOrder(context);
+                              }
+                            },
+                    child:
+                        orderProvider.isLoading
+                            ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                            : const Text(
+                              "Confirm Order",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          );
-
-                          // Proceed to the order confirmation screen
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => OrderConfirmationScreen(),
-                            ),
-                          );
-                        } else if (_paymentMethod == 'COD') {
-                          // For Cash on Delivery, proceed directly to the order confirmation screen
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => OrderConfirmationScreen(),
-                            ),
-                          );
-                        } else {
-                          // Show an error if no payment method is selected
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Please select a payment method and a valid card.")),
-                          );
-                        }
-                      }
-                    },
-                    child: const Text(
-                      "Confirm Order",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
                   ),
                 ),
               ),
@@ -354,8 +324,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  // Input field for new card with validator
-  Widget _buildInputField(String hint, TextEditingController controller, String? Function(String?)? validator) {
+  Widget _buildInputField(
+    String hint,
+    TextEditingController controller,
+    String? Function(String?)? validator,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
@@ -364,19 +337,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           hintText: hint,
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 2),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
         validator: validator,
       ),

@@ -6,8 +6,13 @@ import '../models/credit_card_model.dart';
 class CreditCardNumberFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    String newText = newValue.text.replaceAll(RegExp(r'\s+'), '');  // Remove spaces
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    String newText = newValue.text.replaceAll(
+      RegExp(r'\s+'),
+      '',
+    ); // Remove spaces
 
     // Add space after every 4 digits
     StringBuffer formattedText = StringBuffer();
@@ -29,7 +34,9 @@ class CreditCardNumberFormatter extends TextInputFormatter {
 class DateFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     String newText = newValue.text;
     if (newText.length == 2 && !newText.contains('/')) {
       newText = '$newText/';
@@ -44,7 +51,7 @@ class DateFormatter extends TextInputFormatter {
 class CreditCardForm extends StatefulWidget {
   final CreditCardModel? card;
   final Function(CreditCardModel) onSave;
-  const CreditCardForm({super.key, this.card,required this.onSave});
+  const CreditCardForm({super.key, this.card, required this.onSave});
 
   @override
   _CreditCardFormState createState() => _CreditCardFormState();
@@ -62,16 +69,26 @@ class _CreditCardFormState extends State<CreditCardForm> {
   @override
   void initState() {
     super.initState();
-    _numberController = TextEditingController(text: widget.card?.cardNumber ?? '');
-    _validFromController = TextEditingController(text: widget.card?.validFrom ?? '');
-    _validTillController = TextEditingController(text: widget.card?.validTill ?? '');
-    _nameController = TextEditingController(text: widget.card?.cardHolderName ?? '');
+    _numberController = TextEditingController(
+      text: widget.card?.cardNumber ?? '',
+    );
+    _validFromController = TextEditingController(
+      text: widget.card?.validFrom ?? '',
+    );
+    _validTillController = TextEditingController(
+      text: widget.card?.validTill ?? '',
+    );
+    _nameController = TextEditingController(
+      text: widget.card?.cardHolderName ?? '',
+    );
     _cvvController = TextEditingController(text: widget.card?.cvv ?? '');
   }
 
   bool _isValidCardNumber(String cardNumber) {
     cardNumber = cardNumber.replaceAll(' ', '');
-    return RegExp(r'^\d{16}$').hasMatch(cardNumber); // Example: Must be 16 digits
+    return RegExp(
+      r'^\d{16}$',
+    ).hasMatch(cardNumber); // Example: Must be 16 digits
   }
 
   bool _isValidDate(String date) {
@@ -100,8 +117,6 @@ class _CreditCardFormState extends State<CreditCardForm> {
   bool _isValidCVV(String cvv) {
     return RegExp(r'^\d{3,4}$').hasMatch(cvv);
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -136,10 +151,16 @@ class _CreditCardFormState extends State<CreditCardForm> {
                       fillColor: Colors.white,
                       labelStyle: TextStyle(color: Colors.black),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                     ),
                     cursorColor: Colors.black,
@@ -162,10 +183,16 @@ class _CreditCardFormState extends State<CreditCardForm> {
                       fillColor: Colors.white,
                       labelStyle: TextStyle(color: Colors.black),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                     ),
                     cursorColor: Colors.black,
@@ -188,10 +215,16 @@ class _CreditCardFormState extends State<CreditCardForm> {
                       fillColor: Colors.white,
                       labelStyle: TextStyle(color: Colors.black),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                     ),
                     cursorColor: Colors.black,
@@ -214,10 +247,16 @@ class _CreditCardFormState extends State<CreditCardForm> {
                       fillColor: Colors.white,
                       labelStyle: TextStyle(color: Colors.black),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                     ),
                     cursorColor: Colors.black,
@@ -244,10 +283,16 @@ class _CreditCardFormState extends State<CreditCardForm> {
                       fillColor: Colors.white,
                       labelStyle: TextStyle(color: Colors.black),
                       border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Color.fromARGB(217, 214, 191, 175), width: 1),
+                        borderSide: BorderSide(
+                          color: Color.fromARGB(217, 214, 191, 175),
+                          width: 1,
+                        ),
                       ),
                     ),
                     cursorColor: Colors.black,
@@ -279,7 +324,7 @@ class _CreditCardFormState extends State<CreditCardForm> {
                         Navigator.pop(context, newCard);
                       }
                     },
-                  )
+                  ),
                 ],
               ),
             ),

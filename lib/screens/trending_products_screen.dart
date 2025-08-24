@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'products_detail_screen.dart';
-import '../models/cart_model.dart'; // Ensure this file exists and contains your CartItem model
-import '../providers/cart_provider.dart'; // Make sure CartProvider is set up properly
+import '../models/order_model.dart';
+import '../providers/order_provider.dart';
 
 class TrendingProductsScreen extends StatelessWidget {
   const TrendingProductsScreen({super.key});
@@ -20,7 +20,8 @@ class TrendingProductsScreen extends StatelessWidget {
         'title': 'Beds',
         'image': 'assets/images/beds.jpg',
         'price': '\$350',
-        'description': 'Queen-sized bed with storage drawers and modern design.',
+        'description':
+            'Queen-sized bed with storage drawers and modern design.',
       },
       {
         'title': 'Sofas',
@@ -74,12 +75,13 @@ class TrendingProductsScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ProductDetailsScreen(
-                      title: item['title']!,
-                      image: item['image']!,
-                      price: item['price']!,
-                      description: item['description']!,
-                    ),
+                    builder:
+                        (context) => ProductDetailsScreen(
+                          title: item['title']!,
+                          image: item['image']!,
+                          price: item['price']!,
+                          description: item['description']!,
+                        ),
                   ),
                 );
               },
@@ -94,7 +96,8 @@ class TrendingProductsScreen extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(12)),
+                        top: Radius.circular(12),
+                      ),
                       child: SizedBox(
                         height: 140,
                         child: Image.asset(
@@ -111,7 +114,9 @@ class TrendingProductsScreen extends StatelessWidget {
                     const Spacer(),
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 6),
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -122,8 +127,9 @@ class TrendingProductsScreen extends StatelessWidget {
                                 child: Text(
                                   item['title']!,
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                               IconButton(
@@ -132,21 +138,26 @@ class TrendingProductsScreen extends StatelessWidget {
                                 iconSize: 20,
                                 tooltip: 'Add to Cart',
                                 onPressed: () {
-                                  // Access the CartProvider and add the item to the cart
-                                  final cart = context.read<CartProvider>();
-                                  cart.addItem(
-                                    CartItem(
+                                  // Use OrderProvider instead of CartProvider
+                                  final orderProvider =
+                                      context.read<OrderProvider>();
+                                  orderProvider.addItem(
+                                    OrderItem(
+                                      productId: DateTime.now().toString(),
                                       name: item['title']!,
-                                      image: item['image']!,
-                                      price: double.tryParse(
-                                          item['price']!.replaceAll("\$", "")) ??
+                                      price:
+                                          double.tryParse(
+                                            item['price']!.replaceAll("\$", ""),
+                                          ) ??
                                           0,
-                                      description: item['description']!,
+                                      quantity: 1,
                                     ),
                                   );
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('${item['title']} added to cart'),
+                                      content: Text(
+                                        '${item['title']} added to cart',
+                                      ),
                                       duration: const Duration(seconds: 1),
                                     ),
                                   );
@@ -164,7 +175,7 @@ class TrendingProductsScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),

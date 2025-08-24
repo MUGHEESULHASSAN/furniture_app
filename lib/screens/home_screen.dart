@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import 'profile_screen.dart';
 import 'custom_design_screen.dart';
 import "cart_screen.dart";
-import 'package:untitled/models/cart_model.dart';
-import '../providers/cart_provider.dart';
+import 'package:untitled/models/order_model.dart';
+import '../providers/order_provider.dart';
 import 'trending_products_screen.dart';
 import 'products_detail_screen.dart';
 
@@ -96,20 +96,23 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   CategoryCard(
-                      title: "Chair",
-                      icon: Icons.chair,
-                      color: lightBeige,
-                      allProducts: products),
+                    title: "Chair",
+                    icon: Icons.chair,
+                    color: lightBeige,
+                    allProducts: products,
+                  ),
                   CategoryCard(
-                      title: "Table",
-                      icon: Icons.table_chart,
-                      color: lightBeige,
-                      allProducts: products),
+                    title: "Table",
+                    icon: Icons.table_chart,
+                    color: lightBeige,
+                    allProducts: products,
+                  ),
                   CategoryCard(
-                      title: "Bed",
-                      icon: Icons.bed,
-                      color: lightBeige,
-                      allProducts: products),
+                    title: "Bed",
+                    icon: Icons.bed,
+                    color: lightBeige,
+                    allProducts: products,
+                  ),
                 ],
               ),
             ),
@@ -153,10 +156,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: Colors.white,
-                    ),
+                    Icon(Icons.arrow_forward_ios, color: Colors.white),
                   ],
                 ),
               ),
@@ -194,10 +194,10 @@ class HomeScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final product = products[index];
                   return ProductCard(
-                    name: product['name']!,
-                    image: product['image']!,
-                    price: product['price']!,
-                    description: product['description']!,
+                    name: product['name']! as String,
+                    image: product['image']! as String,
+                    price: product['price']! as double,
+                    description: product['description']! as String,
                   );
                 },
               ),
@@ -215,33 +215,47 @@ class HomeScreen extends StatelessWidget {
         unselectedItemColor: Colors.black,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.trending_up), label: 'Trends'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.trending_up),
+            label: 'Trends',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: 'AR'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Custom Design'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Profile'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Custom Design',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Profile',
+          ),
         ],
         onTap: (index) {
           if (index == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => TrendingProductsScreen()),
+              MaterialPageRoute(
+                builder: (context) => const TrendingProductsScreen(),
+              ),
             );
           }
           if (index == 3) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => BedCustomizerScreen()),
+              MaterialPageRoute(
+                builder: (context) => const BedCustomizerScreen(),
+              ),
             );
           } else if (index == 4) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ProfileScreen(
-                  name: '',
-                  email: '',
-                  phone: '',
-                  address: '',
-                ),
+                builder:
+                    (context) => const ProfileScreen(
+                      name: '',
+                      email: '',
+                      phone: '',
+                      address: '',
+                    ),
               ),
             );
           }
@@ -272,8 +286,11 @@ class CategoryCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                CategoryProductsScreen(category: title, allProducts: allProducts),
+            builder:
+                (context) => CategoryProductsScreen(
+                  category: title,
+                  allProducts: allProducts,
+                ),
           ),
         );
       },
@@ -309,11 +326,14 @@ class CategoryProductsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = allProducts
-        .where((product) =>
-    product['category'].toString().toLowerCase() ==
-        category.toLowerCase())
-        .toList();
+    final filteredProducts =
+        allProducts
+            .where(
+              (product) =>
+                  product['category'].toString().toLowerCase() ==
+                  category.toLowerCase(),
+            )
+            .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -323,32 +343,33 @@ class CategoryProductsScreen extends StatelessWidget {
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 18),
       ),
       backgroundColor: const Color(0xFFF5F5DC),
-      body: filteredProducts.isEmpty
-          ? const Center(
-        child: Text(
-          "No products available in this category",
-          style: TextStyle(color: Colors.black, fontSize: 16),
-        ),
-      )
-          : GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
-        ),
-        itemCount: filteredProducts.length,
-        itemBuilder: (context, index) {
-          final product = filteredProducts[index];
-          return ProductCard(
-            name: product['name']!,
-            image: product['image']!,
-            price: product['price']!,
-            description: product['description']!,
-          );
-        },
-      ),
+      body:
+          filteredProducts.isEmpty
+              ? const Center(
+                child: Text(
+                  "No products available in this category",
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ),
+              )
+              : GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: filteredProducts.length,
+                itemBuilder: (context, index) {
+                  final product = filteredProducts[index];
+                  return ProductCard(
+                    name: product['name']! as String,
+                    image: product['image']! as String,
+                    price: product['price']! as double,
+                    description: product['description']! as String,
+                  );
+                },
+              ),
     );
   }
 }
@@ -388,7 +409,7 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
 
     return GestureDetector(
       onTapDown: _onTapDown,
@@ -398,12 +419,13 @@ class _ProductCardState extends State<ProductCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailsScreen(
-              title: widget.name,
-              image: widget.image,
-              price: "\$${widget.price.toStringAsFixed(2)}",
-              description: widget.description,
-            ),
+            builder:
+                (context) => ProductDetailsScreen(
+                  title: widget.name,
+                  image: widget.image,
+                  price: "\$${widget.price.toStringAsFixed(2)}",
+                  description: widget.description,
+                ),
           ),
         );
       },
@@ -420,20 +442,17 @@ class _ProductCardState extends State<ProductCard> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ClipRRect(
-                borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
                 child: SizedBox(
                   height: 160,
-                  child: Image.asset(
-                    widget.image,
-                    fit: BoxFit.cover,
-                  ),
+                  child: Image.asset(widget.image, fit: BoxFit.cover),
                 ),
               ),
               const Spacer(),
               Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -458,16 +477,17 @@ class _ProductCardState extends State<ProductCard> {
                           iconSize: 20,
                           tooltip: 'Add to Cart',
                           onPressed: () {
-                            cartProvider.addItem(CartItem(
-                              name: widget.name,
-                              image: widget.image,
-                              price: widget.price,
-                              description: widget.description,
-                            ));
+                            orderProvider.addItem(
+                              OrderItem(
+                                productId: DateTime.now().toString(),
+                                name: widget.name,
+                                price: widget.price,
+                                quantity: 1,
+                              ),
+                            );
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content:
-                                Text('${widget.name} added to cart'),
+                                content: Text('${widget.name} added to cart'),
                                 duration: const Duration(seconds: 1),
                               ),
                             );
@@ -539,35 +559,45 @@ class ProductSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    final results = allProducts
-        .where((product) =>
-    product['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
-        product['category'].toString().toLowerCase().contains(query.toLowerCase()))
-        .toList();
+    final results =
+        allProducts
+            .where(
+              (product) =>
+                  product['name'].toString().toLowerCase().contains(
+                    query.toLowerCase(),
+                  ) ||
+                  product['category'].toString().toLowerCase().contains(
+                    query.toLowerCase(),
+                  ),
+            )
+            .toList();
 
     return results.isEmpty
         ? const Center(
-        child: Text("No products found",
-            style: TextStyle(color: Colors.black)))
+          child: Text(
+            "No products found",
+            style: TextStyle(color: Colors.black),
+          ),
+        )
         : GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final product = results[index];
-        return ProductCard(
-          name: product['name']!,
-          image: product['image']!,
-          price: product['price']!,
-          description: product['description']!,
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.75,
+          ),
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final product = results[index];
+            return ProductCard(
+              name: product['name']! as String,
+              image: product['image']! as String,
+              price: product['price']! as double,
+              description: product['description']! as String,
+            );
+          },
         );
-      },
-    );
   }
 
   @override

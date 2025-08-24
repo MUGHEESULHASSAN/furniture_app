@@ -1,18 +1,76 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../providers/auth_provider.dart';
-import '../screens/home_screen.dart';  // Import HomeScreen
+import 'package:dio/dio.dart';
+import '../api/api_client.dart';
+import 'home_screen.dart';
 
-
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
+  State<LoginScreen> createState() => _LoginScreenState();
+}
 
+class _LoginScreenState extends State<LoginScreen> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  late ApiClient apiClient;
+
+  @override
+  void initState() {
+    super.initState();
+    final dio = Dio();
+    dio.options.headers["Content-Type"] = "application/json";
+    apiClient = ApiClient(dio);
+  }
+
+  Future<void> _login() async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    try {
+      final response = await apiClient.loginUser({
+        "email": email,
+        "password": password,
+      });
+
+      // Check if token is returned
+      if (response.token != null && response.token!.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("token", response.token!);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Login successful!')));
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login failed: token missing')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -34,38 +92,20 @@ class LoginScreen extends StatelessWidget {
             const Text('Welcome back you’ve been missed!'),
             const SizedBox(height: 30),
 
-            // Email field
+            // Email
             TextField(
               controller: emailController,
               style: const TextStyle(color: Colors.black),
-              decoration: const InputDecoration(
-                hintText: 'Email',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                  borderSide: BorderSide(color: Color(0xFFD6BFAF), width: 2),
-                ),
-              ),
+              decoration: _inputDecoration('Email'),
             ),
             const SizedBox(height: 20),
 
-            // Password field
+            // Password
             TextField(
               controller: passwordController,
               obscureText: true,
               style: const TextStyle(color: Colors.black),
-              decoration: const InputDecoration(
-                hintText: 'Password',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(12)),
-                  borderSide: BorderSide(color: Color(0xFFD6BFAF), width: 2),
-                ),
-              ),
+              decoration: _inputDecoration('Password'),
             ),
             const SizedBox(height: 30),
 
@@ -73,33 +113,15 @@ class LoginScreen extends StatelessWidget {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 50,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
-                onPressed: () async {
-                  final auth = Provider.of<AuthProvider>(context, listen: false);
-
-                  // ✅ Ensure AuthProvider reads from SharedPreferences
-                  final prefs = await SharedPreferences.getInstance();
-                  final savedEmail = prefs.getString('email');
-                  final savedPassword = prefs.getString('password');
-
-                  bool success = (emailController.text.trim() == savedEmail &&
-                      passwordController.text.trim() == savedPassword);
-
-                  if (!context.mounted) return;
-
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Login successful!')),
-                    );
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invalid credentials')),
-                    );
-                  }
-                },
+                onPressed: _login,
                 child: const Text(
                   'Sign In',
                   style: TextStyle(color: Color(0xFFD6BFAF)),
@@ -110,5 +132,19 @@ class LoginScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  InputDecoration _inputDecoration(String hint) {
+    return const InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: Color(0xFFD6BFAF), width: 2),
+      ),
+    ).copyWith(hintText: hint);
   }
 }
