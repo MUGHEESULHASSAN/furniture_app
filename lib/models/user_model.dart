@@ -5,10 +5,10 @@ part 'user_model.g.dart'; // Make sure you have this part statement
 @JsonSerializable()
 class User {
   final String? id; // Add this field
-  final String name;
-  final String email;
-  final String password;
-  final String phone;
+  final String? name;
+  final String? email;
+  final String? password;
+  final String? phone;
 
   User({
     this.id,
