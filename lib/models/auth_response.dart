@@ -6,12 +6,16 @@ part 'auth_response.g.dart';
 class AuthResponse {
   final String? token;
   final String? status;
-  final String? userId; // top-level userId
-  final User? user; // reference your existing User class
+  final String? userId;
+  final User? user;
 
   AuthResponse({this.token, this.status, this.userId, this.user});
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) =>
-      _$AuthResponseFromJson(json);
-  Map<String, dynamic> toJson() => _$AuthResponseToJson(this);
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    return AuthResponse(
+      token: json["token"],
+      userId: json["user"]["_id"], // ✅ correctly map from backend
+      user: User.fromJson(json["user"]),
+    );
+  }
 }

@@ -1,11 +1,16 @@
 // models/Order.js
 const mongoose = require("mongoose");
-
+ const orderItemSchema = new mongoose.Schema({
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, // 👈 expects ObjectId
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  quantity: { type: Number, required: true }
+});
 const orderSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true
+    required:true
   },
   name: String,
   email: String,
@@ -13,14 +18,7 @@ const orderSchema = new mongoose.Schema({
   address: String,
   paymentMethod: String,
   totalPrice: Number,
-  items: [
-    {
-      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-      name: String,
-      price: Number,
-      quantity: Number
-    }
-  ],
+  items: [orderItemSchema],
   status: {
     type: String,
     default: "Pending"

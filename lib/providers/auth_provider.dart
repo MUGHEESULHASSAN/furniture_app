@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../api/api_client.dart';
 import '../models/user_model.dart' as model;
-import '../models/auth_response.dart'; // Import AuthResponse
+import '../models/auth_response.dart';
 
 class AuthProvider extends ChangeNotifier {
   String? _token;
@@ -34,7 +34,6 @@ class AuthProvider extends ChangeNotifier {
       final formData = user.toJson();
       final AuthResponse response = await apiClient.registerUser(formData);
 
-      // Debug prints
       print("Register Response token: ${response.token}");
       print("Register Response userId: ${response.userId}");
       print("Register Response user: ${response.user}");
@@ -64,7 +63,6 @@ class AuthProvider extends ChangeNotifier {
       final formData = user.toJson();
       final AuthResponse response = await apiClient.loginUser(formData);
 
-      // Debug prints
       print("Login Response token: ${response.token}");
       print("Login Response userId: ${response.userId}");
       print("Login Response user: ${response.user}");

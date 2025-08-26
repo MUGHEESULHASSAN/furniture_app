@@ -22,7 +22,6 @@ class OrderProvider with ChangeNotifier {
   bool get orderSuccess => _orderSuccess;
 
   OrderProvider(AuthProvider authProvider) {
-    // ✅ Setup Dio with baseURL and Authorization header
     _dio = Dio(
       BaseOptions(
         baseUrl: "http://localhost:5000/api",
@@ -35,7 +34,7 @@ class OrderProvider with ChangeNotifier {
     );
   }
 
-  // ✅ Add product to cart
+  // ✅ Cart methods
   void addItem(OrderItem item) {
     final index = _items.indexWhere((i) => i.productId == item.productId);
     if (index >= 0) {
@@ -51,7 +50,6 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ Increase item quantity
   void increaseQuantity(OrderItem item) {
     final index = _items.indexOf(item);
     if (index >= 0) {
@@ -65,42 +63,40 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
-  // ✅ Decrease item quantity
   void decreaseQuantity(OrderItem item) {
     final index = _items.indexOf(item);
-    if (index >= 0 && item.quantity > 1) {
-      _items[index] = OrderItem(
-        productId: item.productId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity - 1,
-      );
-    } else {
-      _items.removeAt(index);
+    if (index >= 0) {
+      if (item.quantity > 1) {
+        _items[index] = OrderItem(
+          productId: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity - 1,
+        );
+      } else {
+        _items.removeAt(index);
+      }
+      notifyListeners();
     }
-    notifyListeners();
   }
 
-  // ✅ Remove item completely
   void removeItem(OrderItem item) {
     _items.remove(item);
     notifyListeners();
   }
 
-  // ✅ Clear cart
   void clearCart() {
     _items.clear();
     notifyListeners();
   }
 
-  // ✅ Reset order state
   void resetOrderStatus() {
     _orderSuccess = false;
     _errorMessage = null;
     notifyListeners();
   }
 
-  // ✅ Send order to backend (with token + userId automatically)
+  // ✅ Place order with proper JSON serialization
   Future<bool> placeOrder(OrderModel order, AuthProvider authProvider) async {
     _isLoading = true;
     _errorMessage = null;
@@ -108,18 +104,25 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final body = {
-        ...order.toJson(),
-        "userId": authProvider.userId!, // ✅ Attach logged-in userId
-      };
+      if (authProvider.userId == null || authProvider.userId!.isEmpty) {
+        throw Exception("User not logged in or invalid userId");
+      }
+
+      for (var item in order.items) {
+        if (item.productId.isEmpty) {
+          throw Exception("Invalid productId in cart");
+        }
+      }
+
+      // Use json_serializable to generate correct JSON
+      final body = order.toJson();
+      print("📦 Sending order body: $body");
 
       final response = await _dio.post(
         "/orders",
         data: body,
         options: Options(
-          headers: {
-            "Authorization": "Bearer ${authProvider.token}", // ✅ attach token
-          },
+          headers: {"Authorization": "Bearer ${authProvider.token}"},
         ),
       );
 

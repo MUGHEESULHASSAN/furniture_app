@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
@@ -12,7 +11,6 @@ const creditCardRoutes = require('./routes/CreditCard.js');
 // Load environment variables
 dotenv.config();
 
-// Validate required env vars
 if (!process.env.JWT_SECRET) {
   console.error('JWT_SECRET is not set in the .env file!');
   process.exit(1);
@@ -27,7 +25,7 @@ const app = express();
 // ---- Middleware ----
 app.use(
   cors({
-    origin: '*', // TODO: restrict to your frontend origin(s) in production
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })

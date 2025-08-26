@@ -1,3 +1,8 @@
+import 'package:json_annotation/json_annotation.dart';
+
+part 'order_model.g.dart';
+
+@JsonSerializable(explicitToJson: true)
 class OrderItem {
   final String productId;
   final String name;
@@ -11,14 +16,13 @@ class OrderItem {
     required this.quantity,
   });
 
-  Map<String, dynamic> toJson() => {
-    "productId": productId,
-    "name": name,
-    "price": price,
-    "quantity": quantity,
-  };
+  factory OrderItem.fromJson(Map<String, dynamic> json) =>
+      _$OrderItemFromJson(json);
+
+  Map<String, dynamic> toJson() => _$OrderItemToJson(this);
 }
 
+@JsonSerializable(explicitToJson: true)
 class OrderModel {
   final String userId;
   final String name;
@@ -40,14 +44,8 @@ class OrderModel {
     required this.items,
   });
 
-  Map<String, dynamic> toJson() => {
-    "userId": userId,
-    "name": name,
-    "email": email,
-    "phone": phone,
-    "address": address,
-    "paymentMethod": paymentMethod,
-    "totalPrice": totalPrice,
-    "items": items.map((e) => e.toJson()).toList(),
-  };
+  factory OrderModel.fromJson(Map<String, dynamic> json) =>
+      _$OrderModelFromJson(json);
+
+  Map<String, dynamic> toJson() => _$OrderModelToJson(this);
 }

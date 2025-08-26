@@ -45,7 +45,7 @@ router.post(
         message: "User registered successfully",
         token,
         userId: user._id.toString(),
-        user: { id: user._id, name: user.name, email: user.email },
+        user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address },
       });
     } catch (err) {
       console.error("Register error:", err);

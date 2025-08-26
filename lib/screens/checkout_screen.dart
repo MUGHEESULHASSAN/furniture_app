@@ -73,15 +73,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderProvider = context.read<OrderProvider>();
     final auth = context.read<AuthProvider>();
 
+    if (auth.token == null || auth.userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("You must be logged in to place an order"),
+        ),
+      );
+      return;
+    }
+
+    // ✅ Create order with proper OrderItem type
     final order = OrderModel(
-      userId: auth.userId ?? "guest",
+      userId: auth.userId!,
       name: fullNameController.text,
       email: emailController.text,
       phone: phoneController.text,
       address: shippingAddressController.text,
       paymentMethod: _paymentMethod,
       totalPrice: orderProvider.totalPrice,
-      items: orderProvider.items,
+      items: orderProvider.items, // Already a List<OrderItem>
     );
 
     final success = await orderProvider.placeOrder(order, auth);
@@ -123,24 +133,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               const SizedBox(height: 10),
               _buildInputField("Full Name", fullNameController, (v) {
                 if (v == null || v.isEmpty) return 'Enter full name';
-                if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(v)) {
+                if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(v))
                   return 'Invalid name';
-                }
                 return null;
               }),
               _buildInputField("Email Address", emailController, (v) {
                 if (v == null || v.isEmpty) return 'Enter email';
-                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
+                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v))
                   return 'Invalid email';
-                }
                 return null;
               }),
               _buildInputField("Phone Number", phoneController, (v) {
                 if (v == null || v.isEmpty) return 'Enter phone number';
                 if (!RegExp(r'^\+44\d{10}$').hasMatch(v) &&
-                    !RegExp(r'^07\d{9}$').hasMatch(v)) {
+                    !RegExp(r'^07\d{9}$').hasMatch(v))
                   return 'Enter valid UK number';
-                }
                 return null;
               }),
               const SizedBox(height: 25),

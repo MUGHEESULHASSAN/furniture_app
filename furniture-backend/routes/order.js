@@ -1,26 +1,75 @@
-// routes/order.js
 const express = require("express");
-const Order = require("../models/Order.js");
+const mongoose = require("mongoose");
+const Order = require("../models/Order");
 const router = express.Router();
 
-// Create new order
+// Place order
 router.post("/", async (req, res) => {
-  try {
-    const newOrder = new Order(req.body);
-    await newOrder.save();
-    res.status(201).json({ success: true, order: newOrder });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
+  console.log("🚀 New POST /orders request received");
+  console.log("Headers:", req.headers);
+  console.log("Raw body:", req.body);
 
-// Get orders by userId
-router.get("/:userId", async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.params.userId });
-    res.status(200).json(orders);
+    const {
+      userId,
+      name,
+      email,
+      phone,
+      address,
+      paymentMethod,
+      totalPrice,
+      items
+    } = req.body || {};
+
+    if (!req.body) {
+      console.error("❌ req.body is undefined");
+      return res.status(400).json({ error: "Request body is empty" });
+    }
+
+    // Validate userId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      console.error("❌ Invalid userId:", userId);
+      return res.status(400).json({ error: "Invalid or missing userId" });
+    }
+
+    // Validate items
+    if (!items || items.length === 0) {
+      console.error("❌ No items provided in order");
+      return res.status(400).json({ error: "No items in the order" });
+    }
+
+    // Validate each productId
+    for (let item of items) {
+      if (!item.productId || !mongoose.Types.ObjectId.isValid(item.productId)) {
+        console.error("❌ Invalid productId:", item.productId);
+        return res.status(400).json({ error: `Invalid productId: ${item.productId}` });
+      }
+    }
+
+    // Build order
+    const newOrder = new Order({
+      userId: new mongoose.Types.ObjectId(userId),
+      name,
+      email,
+      phone,
+      address,
+      paymentMethod,
+      totalPrice,
+      items: items.map((item) => ({
+        productId: new mongoose.Types.ObjectId(item.productId),
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      }))
+    });
+
+    const savedOrder = await newOrder.save();
+    console.log("✅ Order saved successfully:", savedOrder._id);
+
+    res.status(201).json(savedOrder);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("🔥 Order save error:", error);
+    res.status(500).json({ error: "Server error while placing order" });
   }
 });
 
