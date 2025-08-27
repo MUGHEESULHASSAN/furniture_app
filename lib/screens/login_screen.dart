@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final authProvider = context.read<AuthProvider>();
         authProvider.saveAuthData(
           response.token!,
-          response.userId ?? "",
+          //response.userId ?? "",
         );
 
         ScaffoldMessenger.of(context).showSnackBar(

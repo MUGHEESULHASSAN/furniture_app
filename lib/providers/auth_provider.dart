@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+import 'package:jwt_decode/jwt_decode.dart';
 
 import '../api/api_client.dart';
 import '../models/user_model.dart' as model;
@@ -19,38 +20,23 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
 
   AuthProvider() {
-    // start loading saved auth data asynchronously
+    // Load saved auth data when provider is created
     _loadUserFromPrefs();
   }
 
-  // ------------------ Public methods ------------------
+  // ------------------ Persistence ------------------
 
-  /// Public method to explicitly load token/userId from SharedPreferences
-  Future<void> loadUser() async => await _loadUserFromPrefs();
-
-  /// Save token and userId to SharedPreferences
-  Future<void> saveAuthData(String token, String userId) async {
-    _token = token;
-    _userId = userId;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString("token", token);
-      await prefs.setString("userId", userId);
-      debugPrint("AuthProvider: SAVED token=$_token userId=$_userId");
-    } catch (e) {
-      debugPrint("AuthProvider: error saving prefs: $e");
-    }
-    notifyListeners();
-  }
-
-  // ------------------ Private helpers ------------------
-
-  /// Internal loader called by constructor and loadUser()
+  // Load token and decode userId
   Future<void> _loadUserFromPrefs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _token = prefs.getString("token");
-      _userId = prefs.getString("userId");
+
+      if (_token != null && _token!.isNotEmpty) {
+        Map<String, dynamic> payload = Jwt.parseJwt(_token!);
+        _userId = payload["userId"];
+      }
+
       debugPrint("AuthProvider: LOADED token=$_token userId=$_userId");
       notifyListeners();
     } catch (e) {
@@ -58,8 +44,29 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ------------------ Auth methods ------------------
+  // Save token and decode userId
+  Future<void> saveAuthData(String token) async {
+    _token = token;
 
+    if (_token != null && _token!.isNotEmpty) {
+      Map<String, dynamic> payload = Jwt.parseJwt(_token!);
+      _userId = payload["userId"];
+    }
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("token", token);
+      debugPrint("AuthProvider: SAVED token=$_token userId=$_userId");
+    } catch (e) {
+      debugPrint("AuthProvider: error saving prefs: $e");
+    }
+
+    notifyListeners();
+  }
+
+  // ------------------ Auth Methods ------------------
+
+  // Register a new user
   Future<bool> register(
     String email,
     String password,
@@ -77,20 +84,19 @@ class AuthProvider extends ChangeNotifier {
       final formData = user.toJson();
       final AuthResponse response = await apiClient.registerUser(formData);
 
-      _token = response.token;
-      _userId = response.userId;
-      _user = response.user;
-
-      await saveAuthData(_token ?? "", _userId ?? "");
-      return true;
-    } catch (e) {
-      debugPrint("AuthProvider: Error registering user: $e");
+      if (response.token != null) {
+        await saveAuthData(response.token!);
+        _user = response.user;
+        return true;
+      }
       return false;
-    } finally {
-      notifyListeners();
+    } catch (e) {
+      debugPrint("AuthProvider: register error $e");
+      return false;
     }
   }
 
+  // Login existing user
   Future<bool> login(String email, String password) async {
     try {
       final user = model.User(
@@ -103,31 +109,32 @@ class AuthProvider extends ChangeNotifier {
       final formData = user.toJson();
       final AuthResponse response = await apiClient.loginUser(formData);
 
-      _token = response.token;
-      _userId = response.userId;
-      _user = response.user;
-
-      await saveAuthData(_token ?? "", _userId ?? "");
-      return true;
-    } catch (e) {
-      debugPrint("AuthProvider: Error logging in: $e");
+      if (response.token != null) {
+        await saveAuthData(response.token!);
+        _user = response.user;
+        return true;
+      }
       return false;
-    } finally {
-      notifyListeners();
+    } catch (e) {
+      debugPrint("AuthProvider: login error $e");
+      return false;
     }
   }
 
+  // Logout
   Future<void> logout() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove("token");
-      await prefs.remove("userId");
-    } catch (e) {
-      debugPrint("AuthProvider: error clearing prefs: $e");
-    }
     _token = null;
     _userId = null;
     _user = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+    } catch (e) {
+      debugPrint("AuthProvider: error clearing prefs: $e");
+    }
     notifyListeners();
   }
+
+  // Optional: force reload token and userId
+  Future<void> loadUser() async => await _loadUserFromPrefs();
 }
