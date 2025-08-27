@@ -13,6 +13,7 @@ class HomeScreen extends StatelessWidget {
 
   static const List<Map<String, dynamic>> products = [
     {
+      'id': '68a6d175b08b130ec35b721c',
       'name': 'Luxury Sofa',
       'image': 'assets/images/sofa.jpeg',
       'price': 499.00,
@@ -20,6 +21,7 @@ class HomeScreen extends StatelessWidget {
       'category': 'Chair',
     },
     {
+      'id': 'chair001',
       'name': 'Modern Chair',
       'image': 'assets/images/chair.jpeg',
       'price': 199.00,
@@ -27,6 +29,7 @@ class HomeScreen extends StatelessWidget {
       'category': 'Chair',
     },
     {
+      'id': 'bed001',
       'name': 'King Size Bed',
       'image': 'assets/images/bed1.jpeg',
       'price': 1399.99,
@@ -34,6 +37,7 @@ class HomeScreen extends StatelessWidget {
       'category': 'Bed',
     },
     {
+      'id': 'table001',
       'name': 'Dining Table',
       'image': 'assets/images/table.jpeg',
       'price': 899.99,
@@ -194,6 +198,7 @@ class HomeScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final product = products[index];
                   return ProductCard(
+                    productId: product['id']! as String,
                     name: product['name']! as String,
                     image: product['image']! as String,
                     price: product['price']! as double,
@@ -249,13 +254,12 @@ class HomeScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder:
-                    (context) => const ProfileScreen(
-                      name: '',
-                      email: '',
-                      phone: '',
-                      address: '',
-                    ),
+                builder: (context) => const ProfileScreen(
+                  name: '',
+                  email: '',
+                  phone: '',
+                  address: '',
+                ),
               ),
             );
           }
@@ -265,6 +269,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// ---------------- CategoryCard ----------------
 class CategoryCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -286,11 +291,10 @@ class CategoryCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => CategoryProductsScreen(
-                  category: title,
-                  allProducts: allProducts,
-                ),
+            builder: (context) => CategoryProductsScreen(
+              category: title,
+              allProducts: allProducts,
+            ),
           ),
         );
       },
@@ -314,6 +318,7 @@ class CategoryCard extends StatelessWidget {
   }
 }
 
+// ---------------- CategoryProductsScreen ----------------
 class CategoryProductsScreen extends StatelessWidget {
   final String category;
   final List<Map<String, dynamic>> allProducts;
@@ -326,14 +331,11 @@ class CategoryProductsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts =
-        allProducts
-            .where(
-              (product) =>
-                  product['category'].toString().toLowerCase() ==
-                  category.toLowerCase(),
-            )
-            .toList();
+    final filteredProducts = allProducts
+        .where((product) =>
+            product['category'].toString().toLowerCase() ==
+            category.toLowerCase())
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -343,38 +345,40 @@ class CategoryProductsScreen extends StatelessWidget {
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 18),
       ),
       backgroundColor: const Color(0xFFF5F5DC),
-      body:
-          filteredProducts.isEmpty
-              ? const Center(
-                child: Text(
-                  "No products available in this category",
-                  style: TextStyle(color: Colors.black, fontSize: 16),
-                ),
-              )
-              : GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.75,
-                ),
-                itemCount: filteredProducts.length,
-                itemBuilder: (context, index) {
-                  final product = filteredProducts[index];
-                  return ProductCard(
-                    name: product['name']! as String,
-                    image: product['image']! as String,
-                    price: product['price']! as double,
-                    description: product['description']! as String,
-                  );
-                },
+      body: filteredProducts.isEmpty
+          ? const Center(
+              child: Text(
+                "No products available in this category",
+                style: TextStyle(color: Colors.black, fontSize: 16),
               ),
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                return ProductCard(
+                  productId: product['id']! as String,
+                  name: product['name']! as String,
+                  image: product['image']! as String,
+                  price: product['price']! as double,
+                  description: product['description']! as String,
+                );
+              },
+            ),
     );
   }
 }
 
+// ---------------- ProductCard ----------------
 class ProductCard extends StatefulWidget {
+  final String productId;
   final String name;
   final String image;
   final double price;
@@ -382,6 +386,7 @@ class ProductCard extends StatefulWidget {
 
   const ProductCard({
     super.key,
+    required this.productId,
     required this.name,
     required this.image,
     required this.price,
@@ -395,17 +400,9 @@ class ProductCard extends StatefulWidget {
 class _ProductCardState extends State<ProductCard> {
   double _scale = 1.0;
 
-  void _onTapDown(TapDownDetails details) {
-    setState(() => _scale = 0.95);
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    setState(() => _scale = 1.0);
-  }
-
-  void _onTapCancel() {
-    setState(() => _scale = 1.0);
-  }
+  void _onTapDown(TapDownDetails details) => setState(() => _scale = 0.95);
+  void _onTapUp(TapUpDetails details) => setState(() => _scale = 1.0);
+  void _onTapCancel() => setState(() => _scale = 1.0);
 
   @override
   Widget build(BuildContext context) {
@@ -419,13 +416,13 @@ class _ProductCardState extends State<ProductCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => ProductDetailsScreen(
-                  title: widget.name,
-                  image: widget.image,
-                  price: "\$${widget.price.toStringAsFixed(2)}",
-                  description: widget.description,
-                ),
+            builder: (context) => ProductDetailsScreen(
+              productId: widget.productId,
+              title: widget.name,
+              image: widget.image,
+              price: "\$${widget.price.toStringAsFixed(2)}",
+              description: widget.description,
+            ),
           ),
         );
       },
@@ -479,7 +476,7 @@ class _ProductCardState extends State<ProductCard> {
                           onPressed: () {
                             orderProvider.addItem(
                               OrderItem(
-                                productId: DateTime.now().toString(),
+                                productId: widget.productId,
                                 name: widget.name,
                                 price: widget.price,
                                 quantity: 1,
@@ -514,7 +511,7 @@ class _ProductCardState extends State<ProductCard> {
   }
 }
 
-/// 🔍 Search Delegate Implementation
+// ---------------- Search Delegate ----------------
 class ProductSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> allProducts;
   ProductSearchDelegate(this.allProducts);
@@ -536,72 +533,56 @@ class ProductSearchDelegate extends SearchDelegate {
   }
 
   @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear, color: Colors.white),
-        onPressed: () {
-          query = '';
-        },
-      ),
-    ];
-  }
+  List<Widget>? buildActions(BuildContext context) => [
+        IconButton(
+          icon: const Icon(Icons.clear, color: Colors.white),
+          onPressed: () => query = '',
+        ),
+      ];
 
   @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back, color: Colors.white),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
+  Widget? buildLeading(BuildContext context) => IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => close(context, null),
+      );
 
   @override
   Widget buildResults(BuildContext context) {
-    final results =
-        allProducts
-            .where(
-              (product) =>
-                  product['name'].toString().toLowerCase().contains(
-                    query.toLowerCase(),
-                  ) ||
-                  product['category'].toString().toLowerCase().contains(
-                    query.toLowerCase(),
-                  ),
-            )
-            .toList();
+    final results = allProducts
+        .where((product) =>
+            product['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
+            product['category'].toString().toLowerCase().contains(query.toLowerCase()))
+        .toList();
 
     return results.isEmpty
         ? const Center(
-          child: Text(
-            "No products found",
-            style: TextStyle(color: Colors.black),
-          ),
-        )
+            child: Text(
+              "No products found",
+              style: TextStyle(color: Colors.black),
+            ),
+          )
         : GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.75,
-          ),
-          itemCount: results.length,
-          itemBuilder: (context, index) {
-            final product = results[index];
-            return ProductCard(
-              name: product['name']! as String,
-              image: product['image']! as String,
-              price: product['price']! as double,
-              description: product['description']! as String,
-            );
-          },
-        );
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: results.length,
+            itemBuilder: (context, index) {
+              final product = results[index];
+              return ProductCard(
+                productId: product['id']! as String,
+                name: product['name']! as String,
+                image: product['image']! as String,
+                price: product['price']! as double,
+                description: product['description']! as String,
+              );
+            },
+          );
   }
 
   @override
-  Widget buildSuggestions(BuildContext context) {
-    return buildResults(context);
-  }
+  Widget buildSuggestions(BuildContext context) => buildResults(context);
 }

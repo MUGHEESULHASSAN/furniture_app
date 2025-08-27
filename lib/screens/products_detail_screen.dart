@@ -4,6 +4,7 @@ import '../providers/order_provider.dart';
 import '../models/order_model.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
+  final String productId; // ✅ Backend product ID
   final String title;
   final String image;
   final String price;
@@ -11,6 +12,7 @@ class ProductDetailsScreen extends StatelessWidget {
 
   const ProductDetailsScreen({
     super.key,
+    required this.productId,
     required this.title,
     required this.image,
     required this.price,
@@ -98,16 +100,16 @@ class ProductDetailsScreen extends StatelessWidget {
         onPressed: () {
           orderProvider.addItem(
             OrderItem(
-              productId:
-                  DateTime.now().toString(), // temp ID if not from backend
+              productId: productId, // ✅ Use real backend ID
               name: title,
               price: double.tryParse(price.replaceAll("\$", "")) ?? 0,
               quantity: 1,
             ),
           );
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('$title added to cart')));
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('$title added to cart')),
+          );
         },
         icon: const Icon(Icons.add_shopping_cart),
         label: const Text("Add to Cart"),

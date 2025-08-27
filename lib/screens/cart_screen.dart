@@ -33,13 +33,11 @@ class CartScreen extends StatelessWidget {
                   child: ListView.builder(
                     itemCount: cart.items.length,
                     itemBuilder: (context, index) {
-                      final OrderItem item = cart.items[index]; // ✅ use OrderItem
+                      final OrderItem item = cart.items[index];
 
                       return ListTile(
-                        // ⚠️ OrderItem doesn’t have image by default
-                        // If you want product images, add `image` field to OrderItem model
-                        leading: const Icon(Icons.shopping_bag, size: 40, color: Colors.brown),
-
+                        leading: const Icon(Icons.shopping_bag,
+                            size: 40, color: Colors.brown),
                         title: Text(
                           item.name,
                           style: const TextStyle(
@@ -49,14 +47,12 @@ class CartScreen extends StatelessWidget {
                         ),
                         subtitle: Row(
                           children: [
-                            // Decrease quantity
                             IconButton(
                               icon: const Icon(Icons.remove, color: Colors.red),
                               onPressed: () {
                                 cart.decreaseQuantity(item);
                               },
                             ),
-                            // Show quantity
                             Text(
                               "Qty: ${item.quantity}",
                               style: const TextStyle(
@@ -64,7 +60,6 @@ class CartScreen extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            // Increase quantity
                             IconButton(
                               icon: const Icon(Icons.add, color: Colors.green),
                               onPressed: () {
@@ -76,14 +71,12 @@ class CartScreen extends StatelessWidget {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Delete button
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () {
                                 cart.removeItem(item);
                               },
                             ),
-                            // Price
                             Text(
                               "\$${(item.price * item.quantity).toStringAsFixed(2)}",
                               style: const TextStyle(
@@ -92,16 +85,17 @@ class CartScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        // ✅ Navigate to ProductDetailsScreen when tapped
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => ProductDetailsScreen(
+                                productId: item.productId, // ✅ Add this
                                 title: item.name,
-                                image: "assets/images/placeholder.png", // ⚠️ replace when image exists
-                                price: "\$${item.price.toStringAsFixed(2)}",
-                                description: "No description available", // ✅ OrderItem doesn’t have description
+                                image: "assets/images/placeholder.png",
+                                price:
+                                    "\$${item.price.toStringAsFixed(2)}",
+                                description: "No description available",
                               ),
                             ),
                           );
@@ -110,8 +104,6 @@ class CartScreen extends StatelessWidget {
                     },
                   ),
                 ),
-
-                // Total + Checkout Button
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(

@@ -11,12 +11,14 @@ class TrendingProductsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final List<Map<String, String>> trendingCategories = [
       {
+        'id': 'chair001',
         'title': 'Chairs',
         'image': 'assets/images/chairs.jpg',
         'price': '\$120',
         'description': 'Comfortable wooden chair perfect for living rooms.',
       },
       {
+        'id': 'bed001',
         'title': 'Beds',
         'image': 'assets/images/beds.jpg',
         'price': '\$350',
@@ -24,28 +26,33 @@ class TrendingProductsScreen extends StatelessWidget {
             'Queen-sized bed with storage drawers and modern design.',
       },
       {
+        'id': 'sofa001',
         'title': 'Sofas',
         'image': 'assets/images/sofas.jpg',
         'price': '\$270',
         'description': 'Elegant 3-seater sofa with soft cushions and fabric.',
       },
       {
+        'id': 'wardrobe001',
         'title': 'Wardrobes',
         'image': 'assets/images/wardrobes.jpg',
         'price': '\$400',
         'description': 'Spacious wardrobe with sliding doors and mirror.',
       },
       {
+        'id': 'table001',
         'title': 'Tables',
         'image': 'assets/images/tables.jpg',
         'price': '\$150',
         'description': 'Dining table that seats six, with a solid wood finish.',
       },
       {
+        'id': 'desk001',
         'title': 'Desks',
         'image': 'assets/images/desks.jpg',
         'price': '\$180',
-        'description': 'Office desk with drawers and cable management design.',
+        'description':
+            'Office desk with drawers and cable management design.',
       },
     ];
 
@@ -75,13 +82,13 @@ class TrendingProductsScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (context) => ProductDetailsScreen(
-                          title: item['title']!,
-                          image: item['image']!,
-                          price: item['price']!,
-                          description: item['description']!,
-                        ),
+                    builder: (context) => ProductDetailsScreen(
+                      productId: item['id']!,
+                      title: item['title']!,
+                      image: item['image']!,
+                      price: item['price']!,
+                      description: item['description']!,
+                    ),
                   ),
                 );
               },
@@ -138,17 +145,14 @@ class TrendingProductsScreen extends StatelessWidget {
                                 iconSize: 20,
                                 tooltip: 'Add to Cart',
                                 onPressed: () {
-                                  // Use OrderProvider instead of CartProvider
                                   final orderProvider =
                                       context.read<OrderProvider>();
                                   orderProvider.addItem(
                                     OrderItem(
-                                      productId: DateTime.now().toString(),
+                                      productId: item['id']!,
                                       name: item['title']!,
-                                      price:
-                                          double.tryParse(
-                                            item['price']!.replaceAll("\$", ""),
-                                          ) ??
+                                      price: double.tryParse(
+                                              item['price']!.replaceAll("\$", "")) ??
                                           0,
                                       quantity: 1,
                                     ),
@@ -156,8 +160,7 @@ class TrendingProductsScreen extends StatelessWidget {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        '${item['title']} added to cart',
-                                      ),
+                                          '${item['title']} added to cart'),
                                       duration: const Duration(seconds: 1),
                                     ),
                                   );
