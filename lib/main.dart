@@ -13,20 +13,26 @@ import 'providers/auth_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/category_provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Allows async in main
+
   final dio = Dio();
   ApiClient(dio);
+
+  // Create AuthProvider and load saved token/userId
+  final authProvider = AuthProvider();
+  await authProvider.loadUser(); // Explicit load
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(
-          create:
-              (context) => OrderProvider(
-                Provider.of<AuthProvider>(context, listen: false),
-              ),
+        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+
+        ChangeNotifierProxyProvider<AuthProvider, OrderProvider>(
+          create: (ctx) => OrderProvider(authProvider),
+          update: (ctx, auth, previous) => OrderProvider(auth),
         ),
+
         ChangeNotifierProvider(create: (_) => CategoryProvider()),
       ],
       child: const MyApp(),

@@ -104,6 +104,8 @@ class OrderProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      print("🔑 DEBUG - token: ${authProvider.token}");
+      print("👤 DEBUG - userId: ${authProvider.userId}");
       if (authProvider.userId == null || authProvider.userId!.isEmpty) {
         throw Exception("User not logged in or invalid userId");
       }

@@ -72,6 +72,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Future<void> _placeOrder(BuildContext context) async {
     final orderProvider = context.read<OrderProvider>();
     final auth = context.read<AuthProvider>();
+    print("DEBUG token: ${auth.token}");
+print("DEBUG userId: ${auth.userId}");
+
 
     if (auth.token == null || auth.userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(

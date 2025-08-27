@@ -1,12 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Delay navigation until after build
+    Future.delayed(Duration.zero, () {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.isAuthenticated) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Define lighter shade of base beige
-    final Color lightBeige =Color.fromARGB(217, 214, 191, 175);
+    final Color lightBeige = const Color.fromARGB(217, 214, 191, 175);
 
     return Scaffold(
       body: Stack(
@@ -57,13 +76,14 @@ class WelcomeScreen extends StatelessWidget {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Register Button - black
+                      // Register Button
                       Positioned(
                         left: 55,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 36, vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -72,17 +92,21 @@ class WelcomeScreen extends StatelessWidget {
                           onPressed: () {
                             Navigator.pushNamed(context, '/register');
                           },
-                          child: const Text('Register', style: TextStyle(color:Color(0xFFD6BFAF) ),),
+                          child: const Text(
+                            'Register',
+                            style: TextStyle(color: Color(0xFFD6BFAF)),
+                          ),
                         ),
                       ),
 
-                      // Sign In Button - lighter beige
+                      // Sign In Button
                       Positioned(
                         right: 55,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: lightBeige,
-                            padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 36, vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -110,4 +134,3 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 }
-

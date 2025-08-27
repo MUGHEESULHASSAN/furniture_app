@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
+import 'package:provider/provider.dart';
+
 import '../api/api_client.dart';
+import '../providers/auth_provider.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -41,15 +44,25 @@ class _LoginScreenState extends State<LoginScreen> {
         "password": password,
       });
 
-      // Check if token is returned
+      // ✅ Expecting response with token and userId
       if (response.token != null && response.token!.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString("token", response.token!);
+        if (response.userId != null) {
+          await prefs.setString("userId", response.userId!);
+        }
 
+        // ✅ Update AuthProvider immediately
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Login successful!')));
+        final authProvider = context.read<AuthProvider>();
+        authProvider.saveAuthData(
+          response.token!,
+          response.userId ?? "",
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful!')),
+        );
 
         Navigator.pushReplacement(
           context,
