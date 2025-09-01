@@ -13,14 +13,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Delay navigation until after build
-    Future.delayed(Duration.zero, () {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      if (auth.isAuthenticated) {
-        Navigator.pushReplacementNamed(context, '/home');
-      }
-    });
   }
 
   @override
@@ -32,10 +24,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
         fit: StackFit.expand,
         children: [
           // Background image
-          Image.asset(
-            'assets/images/splash_bg.jpg',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/images/splash_bg.jpg', fit: BoxFit.cover),
 
           // Gradient overlay
           Container(
@@ -43,10 +32,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Color.fromARGB(150, 0, 0, 0),
-                ],
+                colors: [Colors.transparent, Color.fromARGB(150, 0, 0, 0)],
               ),
             ),
           ),
@@ -83,7 +69,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 36, vertical: 14),
+                              horizontal: 36,
+                              vertical: 14,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -106,7 +94,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: lightBeige,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 36, vertical: 14),
+                              horizontal: 36,
+                              vertical: 14,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),

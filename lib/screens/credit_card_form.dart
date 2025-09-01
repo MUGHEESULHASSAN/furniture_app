@@ -320,8 +320,9 @@ class _CreditCardFormState extends State<CreditCardForm> {
                           validFrom: _validFromController.text,
                           validTill: _validTillController.text,
                         );
+                        widget.onSave(newCard);
                         // Pass the new card back to the CheckoutScreen and close the form
-                        Navigator.pop(context, newCard);
+                        Navigator.pop(context);
                       }
                     },
                   ),

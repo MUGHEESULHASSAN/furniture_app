@@ -73,8 +73,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final orderProvider = context.read<OrderProvider>();
     final auth = context.read<AuthProvider>();
     print("DEBUG token: ${auth.token}");
-print("DEBUG userId: ${auth.userId}");
-
+    print("DEBUG userId: ${auth.userId}");
 
     if (auth.token == null || auth.userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -247,9 +246,11 @@ print("DEBUG userId: ${auth.userId}");
                       return ListTile(
                         title: Text(
                           "**** **** **** ${card.cardNumber.substring(card.cardNumber.length - 4)}",
+                          style: const TextStyle(color: Colors.black),
                         ),
                         subtitle: Text(
                           "${card.cardHolderName} • Exp: ${card.validTill}",
+                          style: const TextStyle(color: Colors.black),
                         ),
                         onTap: () => setState(() => selectedCard = card),
                       );
@@ -258,6 +259,7 @@ print("DEBUG userId: ${auth.userId}");
                 if (_dropdownValue == 'New Card')
                   IconButton(
                     icon: const Icon(Icons.add),
+                    color: Colors.black,
                     onPressed: () async {
                       final CreditCardModel? newCard = await Navigator.push(
                         context,
