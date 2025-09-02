@@ -1,16 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/order_provider.dart'; // ✅ Your provider
-import '../models/order_model.dart'; // ✅ OrderItem & OrderModel
+import '../providers/cart_provider.dart';
+import '../models/cart_model.dart';
 import 'checkout_screen.dart';
 import 'products_detail_screen.dart';
+import '../providers/auth_provider.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
 
   @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  bool _isFetching = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCart();
+  }
+
+  Future<void> _fetchCart() async {
+    final auth = context.read<AuthProvider>();
+    final cart = context.read<CartProvider>();
+    final token = auth.token;
+
+    if (token != null) {
+      try {
+        await cart.fetchCart(token);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to load cart: $e")),
+        );
+      }
+    }
+    setState(() {
+      _isFetching = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final cart = context.watch<OrderProvider>(); // ✅ Listen to OrderProvider
+    final cart = context.watch<CartProvider>();
+    final auth = context.watch<AuthProvider>();
+
+    if (_isFetching) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -33,13 +73,22 @@ class CartScreen extends StatelessWidget {
                   child: ListView.builder(
                     itemCount: cart.items.length,
                     itemBuilder: (context, index) {
-                      final OrderItem item = cart.items[index];
+                      final CartItem item = cart.items[index];
 
                       return ListTile(
-                        leading: const Icon(Icons.shopping_bag,
-                            size: 40, color: Colors.brown),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            item.product.image,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.shopping_bag, size: 40, color: Colors.brown),
+                          ),
+                        ),
                         title: Text(
-                          item.name,
+                          item.product.name,
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
@@ -49,8 +98,15 @@ class CartScreen extends StatelessWidget {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.remove, color: Colors.red),
-                              onPressed: () {
-                                cart.decreaseQuantity(item);
+                              onPressed: () async {
+                                final token = auth.token;
+                                if (token != null) {
+                                   cart.decreaseQuantity(token, item);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("You must be logged in.")),
+                                  );
+                                }
                               },
                             ),
                             Text(
@@ -62,8 +118,15 @@ class CartScreen extends StatelessWidget {
                             ),
                             IconButton(
                               icon: const Icon(Icons.add, color: Colors.green),
-                              onPressed: () {
-                                cart.increaseQuantity(item);
+                              onPressed: () async {
+                                final token = auth.token;
+                                if (token != null) {
+                                   cart.increaseQuantity(token, item);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("You must be logged in.")),
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -73,15 +136,20 @@ class CartScreen extends StatelessWidget {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                cart.removeItem(item);
+                              onPressed: () async {
+                                final token = auth.token;
+                                if (token != null) {
+                                  await cart.removeItem(token, item.id);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("You must be logged in.")),
+                                  );
+                                }
                               },
                             ),
                             Text(
-                              "\$${(item.price * item.quantity).toStringAsFixed(2)}",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              "\$${(item.product.price * item.quantity).toStringAsFixed(2)}",
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -90,12 +158,11 @@ class CartScreen extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) => ProductDetailsScreen(
-                                productId: item.productId, // ✅ Add this
-                                title: item.name,
-                                image: "assets/images/placeholder.png",
-                                price:
-                                    "\$${item.price.toStringAsFixed(2)}",
-                                description: "No description available",
+                                productId: item.product.id,
+                                title: item.product.name,
+                                image: item.product.image,
+                                price: "\$${item.product.price.toStringAsFixed(2)}",
+                                description: item.product.description,
                               ),
                             ),
                           );
@@ -110,10 +177,7 @@ class CartScreen extends StatelessWidget {
                     children: [
                       Text(
                         "Total: \$${cart.totalPrice.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 10),
                       ElevatedButton(
@@ -122,19 +186,14 @@ class CartScreen extends StatelessWidget {
                             : () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (_) => CheckoutScreen(),
-                                  ),
+                                  MaterialPageRoute(builder: (_) =>  CheckoutScreen()),
                                 );
                               },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: cart.items.isEmpty
                               ? Colors.grey
                               : const Color.fromARGB(217, 214, 191, 175),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 12,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                         ),
                         child: const Text(
                           "Proceed to Checkout",

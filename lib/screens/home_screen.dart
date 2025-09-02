@@ -1,50 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
+import 'package:untitled/providers/auth_provider.dart';
+import 'package:untitled/providers/cart_provider.dart';
+
 import 'profile_screen.dart';
 import 'custom_design_screen.dart';
-import "cart_screen.dart";
-import 'package:untitled/models/order_model.dart';
-import '../providers/order_provider.dart';
+import 'cart_screen.dart';
 import 'trending_products_screen.dart';
 import 'products_detail_screen.dart';
+import '../providers/order_provider.dart';
+import '../models/order_model.dart';
 
-class HomeScreen extends StatelessWidget {
+// ---------------- HomeScreen ----------------
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  static const List<Map<String, dynamic>> products = [
-    {
-      'id': '68a6d175b08b130ec35b721c',
-      'name': 'Luxury Sofa',
-      'image': 'assets/images/sofa.jpeg',
-      'price': 499.00,
-      'description': 'A luxurious and comfortable sofa.',
-      'category': 'Chair',
-    },
-    {
-      'id': 'chair001',
-      'name': 'Modern Chair',
-      'image': 'assets/images/chair.jpeg',
-      'price': 199.00,
-      'description': 'A stylish modern chair for your living room.',
-      'category': 'Chair',
-    },
-    {
-      'id': 'bed001',
-      'name': 'King Size Bed',
-      'image': 'assets/images/bed1.jpeg',
-      'price': 1399.99,
-      'description': 'A large king-sized bed for ultimate comfort.',
-      'category': 'Bed',
-    },
-    {
-      'id': 'table001',
-      'name': 'Dining Table',
-      'image': 'assets/images/table.jpeg',
-      'price': 899.99,
-      'description': 'Elegant dining table for family dinners.',
-      'category': 'Table',
-    },
-  ];
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: "http://localhost:5000/api",
+      connectTimeout: 10000, // 10 seconds in milliseconds
+      receiveTimeout: 10000, // 10 seconds in milliseconds
+    ),
+  );
+
+  List<Map<String, dynamic>> products = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProducts();
+  }
+
+  Future<void> _fetchProducts() async {
+    try {
+      final res = await dio.get('/products');
+      if (res.statusCode == 200 && res.data is List) {
+        final List list = res.data as List;
+        setState(() {
+          products =
+              list.map<Map<String, dynamic>>((p) {
+                final price = p['price'];
+                return {
+                  'id': p['_id']?.toString() ?? '',
+                  'name': p['name']?.toString() ?? 'Untitled',
+                  'image':
+                      (p['image']?.toString().isNotEmpty ?? false)
+                          ? p['image'].toString()
+                          : 'assets/images/placeholder.png', // fallback asset
+                  'price':
+                      (price is num)
+                          ? price.toDouble()
+                          : double.tryParse('$price') ?? 0.0,
+                  'description': p['description']?.toString() ?? '',
+                  'category': p['category']?.toString() ?? 'Other',
+                };
+              }).toList();
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = 'Failed to load products';
+          isLoading = false;
+        });
+      }
+    } on DioError catch (e) {
+      setState(() {
+        errorMessage = e.message ?? 'Network error';
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Unexpected error: $e';
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,128 +128,143 @@ class HomeScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       backgroundColor: const Color(0xFFF5F5DC),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Category Section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  CategoryCard(
-                    title: "Chair",
-                    icon: Icons.chair,
-                    color: lightBeige,
-                    allProducts: products,
-                  ),
-                  CategoryCard(
-                    title: "Table",
-                    icon: Icons.table_chart,
-                    color: lightBeige,
-                    allProducts: products,
-                  ),
-                  CategoryCard(
-                    title: "Bed",
-                    icon: Icons.bed,
-                    color: lightBeige,
-                    allProducts: products,
-                  ),
-                ],
-              ),
-            ),
 
-            // Banner
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                height: 250,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.teal,
-                  borderRadius: BorderRadius.circular(15),
-                  image: const DecorationImage(
-                    image: AssetImage('assets/images/sofatop.jpeg'),
-                    fit: BoxFit.cover,
-                  ),
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : errorMessage.isNotEmpty
+              ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(errorMessage, textAlign: TextAlign.center),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: const [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "High-quality sofa offers",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+              )
+              : SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Category Section
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          CategoryCard(
+                            title: "Chair",
+                            icon: Icons.chair,
+                            color: lightBeige,
+                            allProducts: products,
                           ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          "50% off",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                          CategoryCard(
+                            title: "Table",
+                            icon: Icons.table_chart,
+                            color: lightBeige,
+                            allProducts: products,
                           ),
-                        ),
-                      ],
+                          CategoryCard(
+                            title: "Bed",
+                            icon: Icons.bed,
+                            color: lightBeige,
+                            allProducts: products,
+                          ),
+                        ],
+                      ),
                     ),
-                    Icon(Icons.arrow_forward_ios, color: Colors.white),
+
+                    // Banner
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Container(
+                        height: 250,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.teal,
+                          borderRadius: BorderRadius.circular(15),
+                          image: const DecorationImage(
+                            image: AssetImage('assets/images/sofatop.jpeg'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: const [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "High-quality sofa offers",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                Text(
+                                  "50% off",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Icon(Icons.arrow_forward_ios, color: Colors.white),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Products Heading
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "Products",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Product Grid Section
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.75,
+                            ),
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return ProductCard(
+                            productId: product['id'] as String,
+                            name: product['name'] as String,
+                            image: product['image'] as String,
+                            price: product['price'] as double,
+                            description: product['description'] as String,
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
 
-            // Products Heading
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Products",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ),
-
-            // Product Grid Section
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.75,
-                ),
-                itemCount: products.length,
-                itemBuilder: (context, index) {
-                  final product = products[index];
-                  return ProductCard(
-                    productId: product['id']! as String,
-                    name: product['name']! as String,
-                    image: product['image']! as String,
-                    price: product['price']! as double,
-                    description: product['description']! as String,
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      // Bottom Navigation
+      // Bottom Navigation (unchanged)
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 0,
@@ -254,12 +307,13 @@ class HomeScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ProfileScreen(
-                  name: '',
-                  email: '',
-                  phone: '',
-                  address: '',
-                ),
+                builder:
+                    (context) => const ProfileScreen(
+                      name: '',
+                      email: '',
+                      phone: '',
+                      address: '',
+                    ),
               ),
             );
           }
@@ -291,10 +345,11 @@ class CategoryCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CategoryProductsScreen(
-              category: title,
-              allProducts: allProducts,
-            ),
+            builder:
+                (context) => CategoryProductsScreen(
+                  category: title,
+                  allProducts: allProducts,
+                ),
           ),
         );
       },
@@ -331,11 +386,14 @@ class CategoryProductsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = allProducts
-        .where((product) =>
-            product['category'].toString().toLowerCase() ==
-            category.toLowerCase())
-        .toList();
+    final filtered =
+        allProducts
+            .where(
+              (p) =>
+                  p['category'].toString().toLowerCase() ==
+                  category.toLowerCase(),
+            )
+            .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -345,33 +403,34 @@ class CategoryProductsScreen extends StatelessWidget {
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 18),
       ),
       backgroundColor: const Color(0xFFF5F5DC),
-      body: filteredProducts.isEmpty
-          ? const Center(
-              child: Text(
-                "No products available in this category",
-                style: TextStyle(color: Colors.black, fontSize: 16),
+      body:
+          filtered.isEmpty
+              ? const Center(
+                child: Text(
+                  "No products available in this category",
+                  style: TextStyle(color: Colors.black, fontSize: 16),
+                ),
+              )
+              : GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final product = filtered[index];
+                  return ProductCard(
+                    productId: product['id'] as String,
+                    name: product['name'] as String,
+                    image: product['image'] as String,
+                    price: product['price'] as double,
+                    description: product['description'] as String,
+                  );
+                },
               ),
-            )
-          : GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.75,
-              ),
-              itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                final product = filteredProducts[index];
-                return ProductCard(
-                  productId: product['id']! as String,
-                  name: product['name']! as String,
-                  image: product['image']! as String,
-                  price: product['price']! as double,
-                  description: product['description']! as String,
-                );
-              },
-            ),
     );
   }
 }
@@ -380,7 +439,7 @@ class CategoryProductsScreen extends StatelessWidget {
 class ProductCard extends StatefulWidget {
   final String productId;
   final String name;
-  final String image;
+  final String image; // can be asset path OR URL
   final double price;
   final String description;
 
@@ -404,6 +463,8 @@ class _ProductCardState extends State<ProductCard> {
   void _onTapUp(TapUpDetails details) => setState(() => _scale = 1.0);
   void _onTapCancel() => setState(() => _scale = 1.0);
 
+  bool get _isNetwork => widget.image.startsWith('http');
+
   @override
   Widget build(BuildContext context) {
     final orderProvider = Provider.of<OrderProvider>(context, listen: false);
@@ -416,13 +477,14 @@ class _ProductCardState extends State<ProductCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailsScreen(
-              productId: widget.productId,
-              title: widget.name,
-              image: widget.image,
-              price: "\$${widget.price.toStringAsFixed(2)}",
-              description: widget.description,
-            ),
+            builder:
+                (context) => ProductDetailsScreen(
+                  productId: widget.productId,
+                  title: widget.name,
+                  image: widget.image,
+                  price: "\$${widget.price.toStringAsFixed(2)}",
+                  description: widget.description,
+                ),
           ),
         );
       },
@@ -444,7 +506,24 @@ class _ProductCardState extends State<ProductCard> {
                 ),
                 child: SizedBox(
                   height: 160,
-                  child: Image.asset(widget.image, fit: BoxFit.cover),
+                  child:
+                      _isNetwork
+                          ? Image.network(
+                            widget.image,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) => const Center(
+                                  child: Icon(Icons.broken_image, size: 48),
+                                ),
+                          )
+                          : Image.asset(
+                            widget.image,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) => const Center(
+                                  child: Icon(Icons.broken_image, size: 48),
+                                ),
+                          ),
                 ),
               ),
               const Spacer(),
@@ -473,21 +552,63 @@ class _ProductCardState extends State<ProductCard> {
                           color: Colors.black,
                           iconSize: 20,
                           tooltip: 'Add to Cart',
-                          onPressed: () {
-                            orderProvider.addItem(
-                              OrderItem(
-                                productId: widget.productId,
-                                name: widget.name,
-                                price: widget.price,
-                                quantity: 1,
-                              ),
+                          onPressed: () async {
+                            final cartProvider = Provider.of<CartProvider>(
+                              context,
+                              listen: false,
                             );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${widget.name} added to cart'),
-                                duration: const Duration(seconds: 1),
-                              ),
+                            final authProvider = Provider.of<AuthProvider>(
+                              context,
+                              listen: false,
                             );
+                            final token = authProvider.token;
+
+                            if (token == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'You must be logged in to add to cart',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            try {
+                              // Find if the product is already in the cart
+                              final existingItems = cartProvider.items.where(
+                                (item) => item.product.id == widget.productId,
+                              );
+
+                              if (existingItems.isNotEmpty) {
+                                // Increase quantity if already in cart
+                                await cartProvider.increaseQuantity(
+                                  token,
+                                  existingItems.first,
+                                );
+                              } else {
+                                // Add new item to cart
+                                await cartProvider.addToCart(
+                                  token,
+                                  widget.productId,
+                                  1,
+                                );
+                              }
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${widget.name} added to cart'),
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Failed to add ${widget.name} to cart: $e',
+                                  ),
+                                ),
+                              );
+                            }
                           },
                         ),
                       ],
@@ -514,6 +635,7 @@ class _ProductCardState extends State<ProductCard> {
 // ---------------- Search Delegate ----------------
 class ProductSearchDelegate extends SearchDelegate {
   final List<Map<String, dynamic>> allProducts;
+
   ProductSearchDelegate(this.allProducts);
 
   @override
@@ -534,53 +656,60 @@ class ProductSearchDelegate extends SearchDelegate {
 
   @override
   List<Widget>? buildActions(BuildContext context) => [
-        IconButton(
-          icon: const Icon(Icons.clear, color: Colors.white),
-          onPressed: () => query = '',
-        ),
-      ];
+    IconButton(
+      icon: const Icon(Icons.clear, color: Colors.white),
+      onPressed: () => query = '',
+    ),
+  ];
 
   @override
   Widget? buildLeading(BuildContext context) => IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => close(context, null),
-      );
+    icon: const Icon(Icons.arrow_back, color: Colors.white),
+    onPressed: () => close(context, null),
+  );
 
   @override
   Widget buildResults(BuildContext context) {
-    final results = allProducts
-        .where((product) =>
-            product['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
-            product['category'].toString().toLowerCase().contains(query.toLowerCase()))
-        .toList();
+    final results =
+        allProducts
+            .where(
+              (p) =>
+                  p['name'].toString().toLowerCase().contains(
+                    query.toLowerCase(),
+                  ) ||
+                  p['category'].toString().toLowerCase().contains(
+                    query.toLowerCase(),
+                  ),
+            )
+            .toList();
 
     return results.isEmpty
         ? const Center(
-            child: Text(
-              "No products found",
-              style: TextStyle(color: Colors.black),
-            ),
-          )
+          child: Text(
+            "No products found",
+            style: TextStyle(color: Colors.black),
+          ),
+        )
         : GridView.builder(
-            padding: const EdgeInsets.all(16),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.75,
-            ),
-            itemCount: results.length,
-            itemBuilder: (context, index) {
-              final product = results[index];
-              return ProductCard(
-                productId: product['id']! as String,
-                name: product['name']! as String,
-                image: product['image']! as String,
-                price: product['price']! as double,
-                description: product['description']! as String,
-              );
-            },
-          );
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.75,
+          ),
+          itemCount: results.length,
+          itemBuilder: (context, index) {
+            final product = results[index];
+            return ProductCard(
+              productId: product['id'] as String,
+              name: product['name'] as String,
+              image: product['image'] as String,
+              price: product['price'] as double,
+              description: product['description'] as String,
+            );
+          },
+        );
   }
 
   @override

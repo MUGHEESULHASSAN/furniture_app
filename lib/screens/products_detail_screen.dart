@@ -1,7 +1,8 @@
+// ---------------- ProductDetailsScreen ----------------
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/order_provider.dart';
-import '../models/order_model.dart';
+import '../providers/cart_provider.dart';
+import '../providers/auth_provider.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
   final String productId; // ✅ Backend product ID
@@ -21,7 +22,9 @@ class ProductDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final orderProvider = context.read<OrderProvider>();
+    final cartProvider = Provider.of<CartProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final token = authProvider.token;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5DC),
@@ -32,13 +35,12 @@ class ProductDetailsScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Product Image
           ClipRRect(
             borderRadius: const BorderRadius.only(
               bottomLeft: Radius.circular(24),
               bottomRight: Radius.circular(24),
             ),
-            child: Image.asset(
+            child: Image.network(
               image,
               width: double.infinity,
               height: 260,
@@ -48,8 +50,6 @@ class ProductDetailsScreen extends StatelessWidget {
               },
             ),
           ),
-
-          // Info Section
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(20.0),
@@ -64,7 +64,7 @@ class ProductDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    price,
+                    "\$$price",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
@@ -97,19 +97,34 @@ class ProductDetailsScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
           textStyle: const TextStyle(fontSize: 18),
         ),
-        onPressed: () {
-          orderProvider.addItem(
-            OrderItem(
-              productId: productId, // ✅ Use real backend ID
-              name: title,
-              price: double.tryParse(price.replaceAll("\$", "")) ?? 0,
-              quantity: 1,
-            ),
-          );
+        onPressed: () async {
+          if (token == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('You must be logged in to add to cart')),
+            );
+            return;
+          }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$title added to cart')),
-          );
+          try {
+            // Check if product already exists in cart
+            final existingItems = cartProvider.items.where(
+              (item) => item.product.id == productId,
+            );
+
+            if (existingItems.isNotEmpty) {
+              await cartProvider.increaseQuantity(token, existingItems.first);
+            } else {
+              await cartProvider.addToCart(token, productId, 1);
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$title added to cart')),
+            );
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to add $title to cart: $e')),
+            );
+          }
         },
         icon: const Icon(Icons.add_shopping_cart),
         label: const Text("Add to Cart"),

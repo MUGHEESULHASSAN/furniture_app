@@ -7,6 +7,7 @@ const productRoutes = require('./routes/product.js');
 const userRoutes = require('./routes/users.js');
 const orderRoutes = require('./routes/order.js');
 const creditCardRoutes = require('./routes/CreditCard.js');
+const cartRoutes = require("./routes/cartRoutes.js");
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +39,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes); // includes /register and /login
 app.use('/api/orders', orderRoutes);
 app.use('/api/creditcards', creditCardRoutes);
+app.use("/api/cart", cartRoutes);
 
 // Health check
 app.get('/', (_req, res) => res.send('Server is running'));

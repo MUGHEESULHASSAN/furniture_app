@@ -10,7 +10,8 @@ export const protect = async (req, res, next) => {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      req.user = await User.findById(decoded.id).select("-password");
+      // ✅ Fix: use userId instead of id
+      req.user = await User.findById(decoded.userId).select("-password");
 
       if (!req.user) {
         return res.status(401).json({ message: "Invalid user ID" });
@@ -21,9 +22,7 @@ export const protect = async (req, res, next) => {
       console.error(error);
       return res.status(401).json({ message: "Not authorized, token failed" });
     }
-  }
-
-  if (!token) {
+  } else {
     return res.status(401).json({ message: "Not authorized, no token" });
   }
 };

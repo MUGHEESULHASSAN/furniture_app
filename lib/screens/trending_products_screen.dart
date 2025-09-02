@@ -1,61 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'products_detail_screen.dart';
+import 'package:untitled/providers/auth_provider.dart';
+import 'package:untitled/providers/cart_provider.dart';
+import '../models/product.dart';
 import '../models/order_model.dart';
 import '../providers/order_provider.dart';
+import '../api/api_service.dart';
+import 'products_detail_screen.dart';
 
-class TrendingProductsScreen extends StatelessWidget {
+class TrendingProductsScreen extends StatefulWidget {
   const TrendingProductsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, String>> trendingCategories = [
-      {
-        'id': 'chair001',
-        'title': 'Chairs',
-        'image': 'assets/images/chairs.jpg',
-        'price': '\$120',
-        'description': 'Comfortable wooden chair perfect for living rooms.',
-      },
-      {
-        'id': 'bed001',
-        'title': 'Beds',
-        'image': 'assets/images/beds.jpg',
-        'price': '\$350',
-        'description':
-            'Queen-sized bed with storage drawers and modern design.',
-      },
-      {
-        'id': 'sofa001',
-        'title': 'Sofas',
-        'image': 'assets/images/sofas.jpg',
-        'price': '\$270',
-        'description': 'Elegant 3-seater sofa with soft cushions and fabric.',
-      },
-      {
-        'id': 'wardrobe001',
-        'title': 'Wardrobes',
-        'image': 'assets/images/wardrobes.jpg',
-        'price': '\$400',
-        'description': 'Spacious wardrobe with sliding doors and mirror.',
-      },
-      {
-        'id': 'table001',
-        'title': 'Tables',
-        'image': 'assets/images/tables.jpg',
-        'price': '\$150',
-        'description': 'Dining table that seats six, with a solid wood finish.',
-      },
-      {
-        'id': 'desk001',
-        'title': 'Desks',
-        'image': 'assets/images/desks.jpg',
-        'price': '\$180',
-        'description':
-            'Office desk with drawers and cable management design.',
-      },
-    ];
+  State<TrendingProductsScreen> createState() => _TrendingProductsScreenState();
+}
 
+class _TrendingProductsScreenState extends State<TrendingProductsScreen> {
+  late Future<List<Product>> _productsFuture;
+  final ApiService _apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _productsFuture = _apiService.fetchTrendingProducts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -65,126 +36,165 @@ class TrendingProductsScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         backgroundColor: const Color.fromARGB(217, 214, 191, 175),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          itemCount: trendingCategories.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.75,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-          ),
-          itemBuilder: (context, index) {
-            final item = trendingCategories[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProductDetailsScreen(
-                      productId: item['id']!,
-                      title: item['title']!,
-                      image: item['image']!,
-                      price: item['price']!,
-                      description: item['description']!,
+      body: FutureBuilder<List<Product>>(
+        future: _productsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text("No products available"),
+            );
+          }
+
+          final products = snapshot.data!;
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: GridView.builder(
+              itemCount: products.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.75,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+              ),
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductDetailsScreen(
+                          productId: product.id,
+                          title: product.name,
+                          image: product.image,
+                          price: "\$${product.price.toStringAsFixed(2)}",
+                          description: product.description,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    color: const Color.fromARGB(217, 214, 191, 175),
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
+                          ),
+                          child: SizedBox(
+                            height: 140,
+                            child: Image.network(
+                              product.image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Icon(Icons.broken_image, size: 50),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      product.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+IconButton(
+  icon: const Icon(Icons.add_shopping_cart),
+  color: Colors.black,
+  iconSize: 20,
+  tooltip: 'Add to Cart',
+  onPressed: () async {
+    final cartProvider = context.read<CartProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final token = authProvider.token;
+
+    if (token == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be logged in to add to cart'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Check if product already exists in cart
+      final existingItems = cartProvider.items.where(
+        (item) => item.product.id == product.id,
+      );
+
+      if (existingItems.isNotEmpty) {
+        await cartProvider.increaseQuantity(token, existingItems.first);
+      } else {
+        await cartProvider.addToCart(token, product.id, 1);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${product.name} added to cart')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add ${product.name} to cart: $e')),
+      );
+    }
+  },
+),
+
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "\$${product.price.toStringAsFixed(2)}",
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
               },
-              child: Card(
-                color: const Color.fromARGB(217, 214, 191, 175),
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: SizedBox(
-                        height: 140,
-                        child: Image.asset(
-                          item['image']!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Center(
-                              child: Icon(Icons.broken_image, size: 50),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item['title']!,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add_shopping_cart),
-                                color: Colors.black,
-                                iconSize: 20,
-                                tooltip: 'Add to Cart',
-                                onPressed: () {
-                                  final orderProvider =
-                                      context.read<OrderProvider>();
-                                  orderProvider.addItem(
-                                    OrderItem(
-                                      productId: item['id']!,
-                                      name: item['title']!,
-                                      price: double.tryParse(
-                                              item['price']!.replaceAll("\$", "")) ??
-                                          0,
-                                      quantity: 1,
-                                    ),
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          '${item['title']} added to cart'),
-                                      duration: const Duration(seconds: 1),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item['price']!,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

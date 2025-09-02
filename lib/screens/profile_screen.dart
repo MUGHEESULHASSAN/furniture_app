@@ -38,10 +38,8 @@ class ProfileScreenState extends State<ProfileScreen> {
       address = prefs.getString('address') ?? '';
       // Load profile picture if available
       String? profileImagePath = prefs.getString('profileImage');
-      if (profileImagePath != null) {
-        _profileImage = File(profileImagePath);
-      }
-    });
+      _profileImage = File(profileImagePath!);
+        });
   }
 
   void _logout() {
