@@ -44,7 +44,6 @@ class _LoginScreenState extends State<LoginScreen> {
         "password": password,
       });
 
-      // ✅ Expecting response with token and userId
       if (response.token != null && response.token!.isNotEmpty) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString("token", response.token!);
@@ -52,13 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString("userId", response.userId!);
         }
 
-        // ✅ Update AuthProvider immediately
         if (!mounted) return;
         final authProvider = context.read<AuthProvider>();
-        authProvider.saveAuthData(
-          response.token!,
-          //response.userId ?? "",
-        );
+        authProvider.saveAuthData(response.token!);
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful!')),
@@ -74,12 +69,38 @@ class _LoginScreenState extends State<LoginScreen> {
           const SnackBar(content: Text('Login failed: token missing')),
         );
       }
+    } on DioError catch (e) {
+      if (!mounted) return;
+
+      final status = e.response?.statusCode;
+      final data = e.response?.data;
+      final msg = _serverMessage(data) ?? e.message;
+
+      if (status == 400) {
+        // Wrong credentials
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg ?? 'Invalid email or password')),
+        );
+      } else {
+        // Other network/server errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${msg ?? 'Something went wrong'}')),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unexpected error: $e')),
+      );
     }
+  }
+
+  String? _serverMessage(dynamic data) {
+    try {
+      if (data is Map && data['message'] is String) return data['message'] as String;
+      if (data is String && data.isNotEmpty) return data;
+    } catch (_) {}
+    return null;
   }
 
   @override
